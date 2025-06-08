@@ -221,6 +221,41 @@ def clear_history():
     flash("Riwayat berhasil dihapus.", "success")
     return redirect(url_for("history"))
 
+@app.route("/analytics")
+def analytics():
+    if "client_id" not in session:
+        return redirect(url_for("login"))
+    
+    client_id = session["client_id"]
+    
+    # Total chats
+    total_chats = ChatHistory.query.filter_by(client_id=client_id).count()
+    
+    # Most asked questions (from chat history)
+    most_asked = db.session.query(
+        ChatHistory.user_message, 
+        db.func.count(ChatHistory.user_message).label('count')
+    ).filter_by(client_id=client_id).group_by(
+        ChatHistory.user_message
+    ).order_by(db.desc('count')).limit(10).all()
+    
+    # Chat activity by date
+    chat_activity = db.session.query(
+        db.func.date(ChatHistory.timestamp).label('date'),
+        db.func.count(ChatHistory.id).label('count')
+    ).filter_by(client_id=client_id).group_by(
+        db.func.date(ChatHistory.timestamp)
+    ).order_by(db.desc('date')).limit(30).all()
+    
+    # Total FAQ count
+    total_faqs = ChatbotResponse.query.filter_by(client_id=client_id).count()
+    
+    return render_template("analytics.html", 
+                         total_chats=total_chats,
+                         most_asked=most_asked,
+                         chat_activity=chat_activity,
+                         total_faqs=total_faqs)
+
 @app.route("/healthz")
 def healthz():
     return "OK"

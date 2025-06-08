@@ -9,17 +9,44 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f9fafb;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --chat-user-bg: #d1f7d1;
+      --chat-bot-bg: #eef2ff;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1f2937;
+      --bg-secondary: #111827;
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --border-color: #374151;
+      --chat-user-bg: #065f46;
+      --chat-bot-bg: #1e3a8a;
+    }
+
+    body {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
     .chat-container {
       width: 90%;
       max-width: 700px;
       margin: 40px auto;
       border-radius: 16px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      background: white;
+      background: var(--bg-primary);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       height: 80vh;
+      transition: background-color 0.3s ease;
     }
 
     .chat-header {
@@ -27,8 +54,27 @@
       font-size: 20px;
       font-weight: bold;
       color: #5f5fff;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-color);
       text-align: center;
+      background: var(--bg-primary);
+      position: relative;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      color: var(--text-primary);
     }
 
     .chat-box {
@@ -49,19 +95,22 @@
     }
 
     .chat-message.bot {
-      background-color: #eef2ff;
+      background-color: var(--chat-bot-bg);
       align-self: flex-start;
+      color: var(--text-primary);
     }
 
     .chat-message.user {
-      background-color: #d1f7d1;
+      background-color: var(--chat-user-bg);
       align-self: flex-end;
+      color: var(--text-primary);
     }
 
     .chat-input {
       display: flex;
-      border-top: 1px solid #eee;
+      border-top: 1px solid var(--border-color);
       padding: 12px;
+      background: var(--bg-primary);
     }
 
     .chat-input input {
@@ -71,24 +120,62 @@
       padding: 10px 16px;
       font-size: 15px;
       outline: none;
-      background-color: #f0f0f0;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
     }
 
-    .chat-input button {
-      margin-left: 10px;
-      padding: 0 20px;
-      border-radius: 999px;
-      border: none;
-      background-color: #5f5fff;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
+    .chat-input input::placeholder {
+      color: var(--text-secondary);
     }
 
     .typing {
       font-size: 14px;
-      color: gray;
+      color: var(--text-secondary);
       margin-left: 10px;
+      background: var(--bg-primary);
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-secondary);
+      animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    .suggestions {
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .suggestion-btn {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-btn:hover {
+      background: #5f5fff;
+      color: white;
+      transform: translateY(-1px);
     }
   </style>
 </head>
@@ -98,16 +185,35 @@
     <div class="chat-header flex items-center justify-center gap-3">
       <img src="static/img/Tanyain.png" alt="Logo" class="w-8 h-8">
       <span>Tanyain Chatbot</span>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+        <i class="fas fa-moon" id="theme-icon"></i>
+      </button>
     </div>
 
     <div class="chat-box" id="chat-box">
       <!-- Chat bubbles akan muncul di sini -->
     </div>
 
-    <div id="typing" class="typing hidden">Mengetik...</div>
+    <div id="typing" class="typing hidden flex items-center gap-2 px-4 py-2">
+      <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <span>Bot sedang mengetik...</span>
+    </div>
+
+    <!-- Quick Suggestions -->
+    <div id="suggestions" class="suggestions px-4 py-2 border-t border-gray-200">
+      <div class="flex gap-2 flex-wrap">
+        <button class="suggestion-btn" onclick="sendSuggestion('Apa itu chatbot?')">Apa itu chatbot?</button>
+        <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana cara kerja sistem ini?')">Cara kerja sistem</button>
+        <button class="suggestion-btn" onclick="sendSuggestion('Bantuan')">Bantuan</button>
+      </div>
+    </div>
 
     <div class="chat-input">
-      <input type="text" id="user-input" placeholder="Ketik pesan..." autocomplete="off" />
+      <input type="text" id="user-input" placeholder="Ketik pesan atau pilih saran di atas..." autocomplete="off" />
       <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
@@ -119,6 +225,29 @@
     const typingIndicator = document.getElementById('typing');
     const sessionId = localStorage.getItem('chat_session_id') || crypto.randomUUID();
     localStorage.setItem('chat_session_id', sessionId);
+    const themeIcon = document.getElementById('theme-icon');
+    let currentTheme = localStorage.getItem('theme') || 'light';
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      currentTheme = theme;
+
+      if (theme === 'dark') {
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+      } else {
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+      }
+    }
+
+    // Initialize theme on page load
+    setTheme(currentTheme);
+
+    function toggleTheme() {
+      setTheme(currentTheme === 'light' ? 'dark' : 'light');
+    }
 
     function addMessage(text, isUser = false) {
       const div = document.createElement('div');
@@ -149,6 +278,11 @@
       }
 
       typingIndicator.classList.add('hidden');
+    }
+
+    function sendSuggestion(text) {
+      input.value = text;
+      sendMessage();
     }
 
     sendBtn.addEventListener('click', sendMessage);
