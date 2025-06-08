@@ -1,0 +1,65 @@
+<!-- templates/history.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Riwayat Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function filterChats() {
+      const search = document.getElementById("search").value.toLowerCase();
+      const chats = document.querySelectorAll(".chat-entry");
+      chats.forEach(c => {
+        const content = c.innerText.toLowerCase();
+        c.style.display = content.includes(search) ? "block" : "none";
+      });
+    }
+
+    function confirmClear() {
+      if (confirm("Yakin ingin menghapus semua riwayat chat?")) {
+        window.location.href = "/clear-history";
+      }
+    }
+  </script>
+</head>
+  <body class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 text-gray-100">
+
+  <div class="max-w-4xl mx-auto mt-10 p-6 bg-white/80 backdrop-blur-md text-gray-800 rounded-2xl shadow-xl">
+    <h2 class="text-2xl font-bold mb-4">Riwayat Chat</h2>
+
+    {% if chats %}
+      <div class="space-y-4 max-h-[600px] overflow-y-auto">
+        {% for chat in chats %}
+          <div class="border border-gray-300 rounded-xl p-4 bg-white shadow">
+            <p class="text-sm text-gray-500 mb-1">{{ chat.timestamp.strftime('%d %B %Y, %H:%M') }}</p>
+            <p><strong>Anda:</strong> {{ chat.user_message }}</p>
+            <p><strong>Bot:</strong> {{ chat.bot_response }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-600">Belum ada riwayat chat.</p>
+    {% endif %}
+
+    <!-- Tombol & Modal -->
+    <div class="flex justify-between items-center mt-8">
+      <a href="{{ url_for('index') }}" class="text-white hover:underline">← Kembali ke Dashboard</a>
+      <button onclick="document.getElementById('confirmModal').classList.remove('hidden')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Hapus Semua Riwayat</button>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi -->
+  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white text-gray-800 rounded-lg p-6 w-80">
+      <h3 class="text-lg font-bold mb-4">Konfirmasi</h3>
+      <p class="mb-6">Yakin ingin menghapus semua riwayat chat?</p>
+      <div class="flex justify-end gap-4">
+        <button onclick="document.getElementById('confirmModal').classList.add('hidden')" class="px-4 py-2 rounded border border-gray-300">Batal</button>
+        <a href="{{ url_for('clear_history') }}" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Hapus</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://kit.fontawesome.com/a2e0f4f91f.js" crossorigin="anonymous"></script>
+</body>
+</html>

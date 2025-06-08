@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Chatbot FAQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+      class="bg-gradient-to-b from-blue-600 to-purple-700 text-white fixed top-0 left-0 h-full z-40
+             w-full md:w-64 transform -translate-x-full md:translate-x-0
+             transition-transform duration-300 p-6 space-y-4">
+
+      <div class="flex items-center gap-3 mb-6">
+        <img src="{{ url_for('static', filename='img/T-putih.png') }}" alt="Tanyain Logo" class="h-10 w-10 rounded-full shadow">
+        <span class="text-xl font-bold tracking-wide">Tanyain</span>
+      </div>
+
+      <nav class="space-y-3">
+        <a href="{{ url_for('index') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+          <i class="fas fa-question-circle"></i> FAQ
+        </a>
+        <a href="{{ url_for('history') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+          <i class="fas fa-clock-rotate-left"></i> Riwayat
+        </a>
+        <a href="{{ url_for('logout') }}" class="flex items-center gap-2 p-3 rounded hover:bg-red-600 transition">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </nav>
+
+      <div class="mt-auto text-sm text-gray-300 pt-4 border-t border-purple-500">
+        Login sebagai <strong>{{ session['username'] }}</strong>
+      </div>
+
+      <button id="closeSidebar" class="md:hidden absolute top-4 right-4 text-white text-xl focus:outline-none hover:text-red-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </aside>
+
+    <!-- Konten Utama -->
+    <div class="flex-1 md:ml-64 w-full">
+
+      <!-- Topbar Mobile -->
+      <header class="bg-white shadow-md p-4 flex items-center justify-between md:hidden">
+        <button id="toggleSidebar" class="text-purple-600 text-2xl">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 class="text-xl font-semibold text-gray-800">Admin Chatbot</h2>
+      </header>
+
+      <main class="p-6 md:p-10">
+
+        <!-- Judul -->
+        <h2 class="text-3xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+          <i class="fas fa-screwdriver-wrench text-purple-600"></i> Kelola FAQ Chatbot
+        </h2>
+
+        <!-- Form Tambah FAQ -->
+        <section class="bg-white p-6 rounded-lg shadow mb-10">
+          <h3 class="text-2xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <i class="fas fa-plus-circle text-green-500"></i> Tambah FAQ
+          </h3>
+          <form action="{{ url_for('add_faq') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" name="new_question" placeholder="Pertanyaan" class="p-3 border border-gray-300 rounded w-full" required>
+            <input type="text" name="category" placeholder="Kategori (opsional)" class="p-3 border border-gray-300 rounded w-full">
+            <textarea name="new_answer" placeholder="Jawaban" class="md:col-span-2 p-3 border border-gray-300 rounded w-full" rows="4" required></textarea>
+            <button type="submit" class="md:col-span-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-2 px-4 rounded transition">
+              <i class="fas fa-save"></i> Simpan FAQ
+            </button>
+          </form>
+        </section>
+
+        <!-- Upload CSV -->
+        <section class="bg-white p-6 rounded-lg shadow mb-10">
+          <h3 class="text-2xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <i class="fas fa-file-upload text-yellow-500"></i> Upload FAQ via CSV
+          </h3>
+          <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" ...
+ class="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <input type="file" name="csv_file" accept=".csv" required class="text-gray-700 w-full md:w-auto border border-gray-300 rounded p-2" />
+            <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-2 px-4 rounded transition">
+              <i class="fas fa-upload"></i> Upload
+            </button>
+          </form>
+        </section>
+        <form id="bulkDeleteForm" method="POST" action="{{ url_for('bulk_delete') }}">
+          <section class="bg-white p-6 rounded-lg shadow mb-6">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+              <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="selectAll" class="h-4 w-4"> Pilih Semua FAQ
+              </label>
+              <button type="submit" onclick="return confirm('Yakin ingin menghapus yang dipilih?')"
+                      class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm flex items-center gap-2">
+                <i class="fas fa-trash"></i> Hapus Terpilih
+              </button>
+            </div>
+
+            <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <i class="fas fa-list text-blue-500"></i> Daftar FAQ
+            </h3>
+            <div class="mb-4 flex flex-wrap gap-4 items-center">
+              <label for="categoryFilter" class="text-sm text-gray-700">Filter Kategori:</label>
+              <select id="categoryFilter" class="border-gray-300 rounded px-3 py-2 text-sm">
+                <option value="all">Semua</option>
+                {% set categories = faqs | map(attribute='category') | select | list | unique %}
+                {% for cat in categories %}
+                  <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% if faqs %}
+              {% for faq in faqs %}
+            <div class="mb-4 border-b pb-3 flex items-start gap-4 faq-item" data-category="{{ faq.category }}">
+                  <input type="checkbox" name="selected_ids" value="{{ faq.id }}" class="faqCheckbox mt-1">
+                  <div class="flex-1">
+                    <div class="text-lg font-medium text-gray-800 mb-1">{{ faq.question }}</div>
+                    <div class="text-gray-700 mb-1">{{ faq.answer }}</div>
+                    <div class="text-sm text-gray-500 mb-2">Kategori: {{ faq.category or '-' }}</div>
+                    <div class="flex gap-3 text-sm">
+                      <button 
+                        type="button"
+                        class="btn-edit text-blue-500 hover:underline"
+                        data-id="{{ faq.id }}"
+                        data-question="{{ faq.question }}"
+                        data-answer="{{ faq.answer }}"
+                        data-category="{{ faq.category or '' }}">
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+
+                      <a href="{{ url_for('delete_faq', id=faq.id) }}" onclick="return confirm('Yakin ingin menghapus?')" class="text-red-600 hover:underline">
+                        <i class="fas fa-trash"></i> Hapus
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-gray-500">Belum ada data FAQ.</p>
+            {% endif %}
+          </section>
+        </form>
+        {% if total_pages > 1 %}
+        <div class="mt-6 flex justify-center space-x-2 text-sm">
+          {% for p in range(1, total_pages + 1) %}
+            <a href="{{ url_for('index', page=p, category=selected_category) }}"
+               class="px-3 py-1 rounded border {{ 'bg-purple-600 text-white' if p == page else 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+              {{ p }}
+            </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      </main>
+    </div>
+  </div>
+  <!-- Modal Edit FAQ -->
+  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-gray-50 p-4 rounded-md shadow  w-full max-w-md p-6 relative">
+      <h2 class="text-lg font-semibold mb-4">Edit Pertanyaan FAQ</h2>
+      <form method="POST" id="editForm" class="space-y-4">
+        <div>
+          <label for="editQuestion" class="block text-sm font-medium text-gray-700">Pertanyaan</label>
+          <input type="text" id="editQuestion" name="question" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Masukkan pertanyaan...">
+        </div>
+
+        <div>
+          <label for="editAnswer" class="block text-sm font-medium text-gray-700">Jawaban</label>
+          <textarea id="editAnswer" name="answer" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Masukkan jawaban..."></textarea>
+        </div>
+
+        <div>
+          <label for="editCategory" class="block text-sm font-medium text-gray-700">Kategori (Opsional)</label>
+          <input type="text" id="editCategory" name="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Contoh: Umum, Teknis, dll">
+        </div>
+
+        <div class="text-right">
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS Sidebar Toggle -->
+  <script>
+    document.getElementById("selectAll").addEventListener("change", function () {
+      const checkboxes = document.querySelectorAll(".faqCheckbox");
+      checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+  </script>
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleSidebar = document.getElementById("toggleSidebar");
+    const closeSidebar = document.getElementById("closeSidebar");
+    const backdrop = document.getElementById("backdrop");
+
+    toggleSidebar?.addEventListener("click", () => {
+      sidebar.classList.remove("-translate-x-full");
+      backdrop.classList.remove("hidden");
+    });
+
+    closeSidebar?.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      backdrop.classList.add("hidden");
+    });
+
+    backdrop?.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      backdrop.classList.add("hidden");
+    });
+  </script>
+  <script>
+    document.getElementById('categoryFilter').addEventListener('change', function () {
+      const selected = this.value;
+      const items = document.querySelectorAll('.faq-item');
+
+      items.forEach(item => {
+        const category = item.getAttribute('data-category') || '';
+        if (selected === 'all' || category === selected) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+
+    // Select All Checkbox logic
+    document.getElementById('selectAll').addEventListener('change', function () {
+      const checkboxes = document.querySelectorAll('.faqCheckbox');
+      checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+  </script>
+  <script>
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    const questionInput = document.getElementById('editQuestion');
+    const answerInput = document.getElementById('editAnswer');
+    const categoryInput = document.getElementById('editCategory');
+
+    // Fungsi buka modal
+    function openEditModal(id, question, answer, category) {
+      questionInput.value = question;
+      answerInput.value = answer;
+      categoryInput.value = category || '';
+
+      // Ganti action form ke URL edit yang sesuai
+      editForm.action = `/edit/${id}`;
+
+      editModal.classList.remove('hidden');
+    }
+
+    // Tutup modal
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+    }
+
+    // Tutup modal kalau klik di luar form (klik backdrop)
+    editModal.addEventListener('click', function(event) {
+      if (event.target === editModal) {
+        closeEditModal();
+      }
+    });
+
+    // Pasang event listener ke semua tombol edit
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openEditModal(
+          btn.dataset.id,
+          btn.dataset.question,
+          btn.dataset.answer,
+          btn.dataset.category
+        );
+      });
+    });
+  </script>
+</body>
+</html>
