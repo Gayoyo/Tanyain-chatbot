@@ -1,5 +1,5 @@
 entrypoint = "gabot_multi.py"
-modules = ["python-3.11"]
+modules = ["nodejs-20", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
@@ -12,10 +12,10 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["python3", "main.py"]
+run = ["sh", "-c", "python3 gabot_multi.py"]
 deploymentTarget = "cloudrun"
+build = ["sh", "-c", "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-exposeLocalhost = true
