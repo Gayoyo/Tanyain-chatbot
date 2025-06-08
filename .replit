@@ -19,3 +19,32 @@ build = ["sh", "-c", "npx tailwindcss -i ./static/css/input.css -o ./static/css/
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[workflows]
+runButton = "Production"
+
+[[workflows.workflow]]
+name = "Production"
+author = 43082952
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build-css"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python gabot_multi.py"
+
+[[workflows.workflow]]
+name = "Development"
+author = 43082952
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run watch-css"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python gabot_multi.py"
