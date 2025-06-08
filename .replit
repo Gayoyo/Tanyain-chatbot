@@ -1,5 +1,5 @@
 entrypoint = "gabot_multi.py"
-modules = ["nodejs-20", "python-3.11"]
+modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
@@ -12,39 +12,10 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["sh", "-c", "python3 gabot_multi.py"]
+run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[workflows]
-runButton = "Production"
-
-[[workflows.workflow]]
-name = "Production"
-author = 43082952
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run build-css"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python gabot_multi.py"
-
-[[workflows.workflow]]
-name = "Development"
-author = 43082952
-mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run watch-css"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python gabot_multi.py"
+exposeLocalhost = true
