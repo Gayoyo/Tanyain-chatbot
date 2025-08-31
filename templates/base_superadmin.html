@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Superadmin Tanyain{% endblock %}</title>
+
+  <!-- Tailwind & Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Optional: Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#7c3aed",
+            secondary: "#1e3a8a",
+          },
+        },
+      },
+    };
+  </script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+  <!-- Backdrop for mobile -->
+  <div id="backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-600 to-purple-700 text-white fixed top-0 left-0 h-full z-40
+      w-full md:w-64 transform -translate-x-full md:translate-x-0
+      transition-transform duration-300 p-6 space-y-4">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-3 mb-6">
+        <img src="{{ url_for('static', filename='img/T-putih.png') }}" alt="Logo" class="h-10 w-10 rounded-full shadow" />
+        <span class="text-xl font-bold tracking-wide">Tanyain</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="space-y-3">
+        <a href="{{ url_for('all_clients') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+          <i class="fas fa-users"></i> Semua Klien
+        </a>
+        <a href="{{ url_for('superadmin') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+          <i class="fas fa-user-clock"></i> Klien Pending
+        </a>
+        <a href="{{ url_for('logout') }}" class="flex items-center gap-2 p-3 rounded hover:bg-red-600 transition">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </nav>
+
+      <!-- Close button (mobile) -->
+      <button id="closeSidebar" class="md:hidden absolute top-4 right-4 text-white text-xl">
+        <i class="fas fa-times"></i>
+      </button>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 md:ml-64 w-full">
+
+      <!-- Topbar (mobile) -->
+      <header class="bg-white shadow-md p-4 flex items-center justify-between md:hidden">
+        <button id="toggleSidebar" class="text-purple-600 text-2xl">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 class="text-xl font-semibold text-gray-800">Superadmin</h2>
+      </header>
+
+      <!-- Page Content -->
+      <main class="p-6 md:p-10">
+        {% block content %}
+        <!-- Konten halaman akan disisipkan di sini -->
+        {% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Sidebar Toggle Script -->
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const toggleSidebar = document.getElementById("toggleSidebar");
+    const closeSidebar = document.getElementById("closeSidebar");
+    const backdrop = document.getElementById("backdrop");
+
+    toggleSidebar?.addEventListener("click", () => {
+      sidebar.classList.remove("-translate-x-full");
+      backdrop.classList.remove("hidden");
+    });
+
+    closeSidebar?.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      backdrop.classList.add("hidden");
+    });
+
+    backdrop?.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      backdrop.classList.add("hidden");
+    });
+  </script>
+
+</body>
+</html>

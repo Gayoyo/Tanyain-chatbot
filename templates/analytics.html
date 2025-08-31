@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -8,91 +7,194 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e0;
+      border-radius: 3px;
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
-  <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        <i class="fas fa-chart-bar text-blue-600"></i>
-        Analytics Dashboard
-      </h1>
-      <a href="{{ url_for('index') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        <i class="fas fa-arrow-left"></i> Kembali
-      </a>
-    </div>
+      <body class="bg-gray-100 font-sans">
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div class="bg-white p-6 rounded-lg shadow">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-gray-600 text-sm">Total Chat</p>
-            <p class="text-3xl font-bold text-blue-600">{{ total_chats }}</p>
+      <!-- Backdrop -->
+      <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden transition-opacity duration-300"></div>
+
+      <div class="flex min-h-screen">
+
+        <!-- Sidebar -->
+          <aside id="sidebar"
+            class="bg-gradient-to-b from-blue-600 to-purple-700 text-white fixed top-0 left-0 h-full z-40
+                   w-full md:w-64 transform -translate-x-full md:translate-x-0
+                   transition-transform duration-300 p-6 space-y-4">
+
+          <div class="flex items-center gap-3 mb-6">
+            <img src="{{ url_for('static', filename='img/T-putih.png') }}" alt="Tanyain Logo" class="h-10 w-10 rounded-full shadow">
+            <span class="text-xl font-bold tracking-wide">Tanyain</span>
           </div>
-          <i class="fas fa-comments text-blue-600 text-3xl"></i>
+
+          <nav class="space-y-3">
+            <a href="{{ url_for('index') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+              <i class="fas fa-question-circle"></i> FAQ
+            </a>
+            <a href="{{ url_for('history') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+              <i class="fas fa-clock-rotate-left"></i> Riwayat
+            </a>
+            <a href="{{ url_for('analytics') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+              <i class="fas fa-chart-line"></i> Analitik
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-2 p-3 rounded hover:bg-red-600 transition">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </nav>
+
+          <div class="mt-auto text-sm text-gray-300 pt-4 border-t border-purple-500">
+            Login sebagai <strong>{{ session['username'] }}</strong>
+          </div>
+
+          <!-- Tombol Close Sidebar (mobile) -->
+          <button id="closeSidebar" class="md:hidden absolute top-4 right-4 text-white text-xl focus:outline-none hover:text-red-300">
+            <i class="fas fa-times"></i>
+          </button>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 md:ml-64 w-full">
+
+          <!-- Topbar untuk mobile -->
+          <header class="bg-white shadow-md p-4 flex items-center justify-between md:hidden">
+            <button id="toggleSidebar" class="text-purple-600 text-2xl">
+              <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="text-xl font-semibold text-gray-800">Admin Chatbot</h2>
+          </header>
+
+          <!-- Konten utama -->
+          <main class="p-6 md:p-10">
+            <!-- Judul -->
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+              <i class="fas fa-chart-line text-purple-600"></i> Analisis Chatbot FAQ
+            </h2>
+
+      <!-- Statistik -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-6 rounded-lg shadow mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm">Total Chat</p>
+              <p class="text-3xl font-bold text-blue-600">{{ total_chats }}</p>
+            </div>
+            <i class="fas fa-comments text-blue-600 text-3xl"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm">Total FAQ</p>
+              <p class="text-3xl font-bold text-green-600">{{ total_faqs }}</p>
+            </div>
+            <i class="fas fa-question-circle text-green-600 text-3xl"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm">Rata-rata Chat/Hari</p>
+              <p class="text-3xl font-bold text-purple-600">
+                {% if chat_activity %}
+                  {{ "%.1f"|format(total_chats / chat_activity|length) }}
+                {% else %}
+                  0
+                {% endif %}
+              </p>
+            </div>
+            <i class="fas fa-chart-line text-purple-600 text-3xl"></i>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-lg shadow">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-gray-600 text-sm">Total FAQ</p>
-            <p class="text-3xl font-bold text-green-600">{{ total_faqs }}</p>
+      <!-- Grafik & Ring Chart -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Grafik Aktivitas -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow mb-4">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-area text-blue-600"></i>
+            Aktivitas Chat (30 Hari)
+          </h3>
+          <div class="h-64">
+            <canvas id="chatChart"></canvas>
           </div>
-          <i class="fas fa-question-circle text-green-600 text-3xl"></i>
+        </div>
+
+        <!-- Ring Chart -->
+        <div class="bg-white p-6 rounded-lg shadow mb-4 flex flex-col items-center">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="fas fa-circle-notch text-indigo-600"></i>
+            Distribusi Chat
+          </h3>
+          <canvas id="ringChart" width="220" height="220"></canvas>
+          <div class="mt-4 text-sm text-center">
+            <p class="text-green-600">✅ Terjawab: {{ answered_chats }}</p>
+            <p class="text-red-500">❌ Tidak Terjawab: {{ unanswered_chats }}</p>
+          </div>
         </div>
       </div>
 
+      <!-- Pertanyaan Populer -->
       <div class="bg-white p-6 rounded-lg shadow">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-gray-600 text-sm">Rata-rata Chat/Hari</p>
-            <p class="text-3xl font-bold text-purple-600">
-              {% if chat_activity %}
-                {{ "%.1f"|format(total_chats / chat_activity|length) }}
-              {% else %}
-                0
-              {% endif %}
-            </p>
-          </div>
-          <i class="fas fa-chart-line text-purple-600 text-3xl"></i>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Chat Activity Chart -->
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
-          <i class="fas fa-chart-area text-blue-600"></i>
-          Aktivitas Chat (30 hari terakhir)
-        </h3>
-        <canvas id="chatChart" height="200"></canvas>
-      </div>
-
-      <!-- Most Asked Questions -->
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
           <i class="fas fa-fire text-red-600"></i>
           Pertanyaan Populer
         </h3>
-        <div class="space-y-3">
+        <div class="overflow-y-auto max-h-64 space-y-3 pr-1 custom-scrollbar">
           {% for question, count in most_asked %}
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-            <span class="text-sm">{{ question[:50] }}{% if question|length > 50 %}...{% endif %}</span>
-            <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs">{{ count }}x</span>
-          </div>
+            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <span class="text-sm">{{ question[:50] }}{% if question|length > 50 %}...{% endif %}</span>
+              <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs">{{ count }}x</span>
+            </div>
           {% endfor %}
           {% if not most_asked %}
-          <p class="text-gray-500 text-center py-4">Belum ada data chat</p>
+            <p class="text-gray-500 text-center py-4">Belum ada data chat</p>
           {% endif %}
         </div>
       </div>
-    </div>
-  </div>
 
+        </main>
+          </div>
+        </div>
+
+        <!-- JS Sidebar Toggle -->
+        <script>
+          const sidebar = document.getElementById("sidebar");
+          const toggleSidebar = document.getElementById("toggleSidebar");
+          const closeSidebar = document.getElementById("closeSidebar");
+          const backdrop = document.getElementById("backdrop");
+
+          toggleSidebar?.addEventListener("click", () => {
+            sidebar.classList.remove("-translate-x-full");
+            backdrop.classList.remove("hidden");
+            document.body.classList.add("overflow-hidden");
+          });
+
+          closeSidebar?.addEventListener("click", () => {
+            sidebar.classList.add("-translate-x-full");
+            backdrop.classList.add("hidden");
+            document.body.classList.remove("overflow-hidden");
+          });
+
+          backdrop?.addEventListener("click", () => {
+            sidebar.classList.add("-translate-x-full");
+            backdrop.classList.add("hidden");
+            document.body.classList.remove("overflow-hidden");
+          });
+        </script>
+
+  <!-- Chart Script -->
   <script>
-    // Chart for chat activity
     const ctx = document.getElementById('chatChart').getContext('2d');
     const chartData = {
       labels: [
@@ -130,6 +232,30 @@
         }
       }
     });
+
+    const ringCtx = document.getElementById('ringChart').getContext('2d');
+    const ringData = {
+      labels: ['Terjawab', 'Tidak Terjawab'],
+      datasets: [{
+        data: [{{ answered_chats }}, {{ unanswered_chats }}],
+        backgroundColor: ['#4CAF50', '#F44336'],
+        hoverOffset: 30
+      }]
+    };
+    const ringConfig = {
+      type: 'doughnut',
+      data: ringData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          }
+        }
+      }
+    };
+    new Chart(ringCtx, ringConfig);
   </script>
+
 </body>
 </html>

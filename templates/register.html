@@ -1,58 +1,138 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>Daftar Klien - Chatbot FAQ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .register-container {
-            margin-top: 80px;
-        }
-        .card {
-            padding: 30px;
-            border-radius: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar Akun - Tanyain</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-box {
+      width: 360px;
+      padding: 40px 30px;
+      border-radius: 16px;
+      background: #ffffff;
+      color: #333;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      text-align: center;
+    }
+
+    .login-box h4 {
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .form-label {
+      font-weight: 500;
+      color: #333;
+      text-align: left;
+      display: block;
+    }
+
+    .form-control {
+      background-color: transparent;
+      border: none;
+      border-bottom: 2px solid rgba(0,0,0,0.2);
+      border-radius: 0;
+      color: #333;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .form-control:focus {
+      border-bottom: 2px solid #6a11cb;
+      background-color: transparent;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .btn-primary {
+      background-color: #6a11cb;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover {
+      background-color: #5a0fb4;
+    }
+
+    .logo {
+      width: 70px;
+      height: 70px;
+      margin-bottom: 15px;
+    }
+
+    .text-small {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .alert {
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-<div class="container register-container">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            <div class="card shadow">
-                <h4 class="text-center mb-4">Daftar Klien Baru</h4>
-                <form method="POST" action="{{ url_for('register') }}">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username Klien</label>
-                        <input type="text" name="username" class="form-control" id="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Kata Sandi</label>
-                        <input type="password" name="password" class="form-control" id="password" required>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-success">Daftar</button>
-                    </div>
-                </form>
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('login') }}">Sudah punya akun? Login di sini</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div class="login-box text-center">
+    <img src="{{ url_for('static', filename='img/Tanyain.png') }}" alt="Logo" class="logo" />
+
+    <h4>Daftar Akun</h4>
+
+    <!-- Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Form Register -->
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="mb-3 text-start">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" name="username" id="username" required />
+      </div>
+      <div class="mb-3 text-start">
+        <label for="password" class="form-label">Kata Sandi</label>
+        <input type="password" class="form-control" name="password" id="password" required />
+      </div>
+      <div class="mb-3 text-start">
+        <label for="business_name" class="form-label">Nama Usaha</label>
+        <input type="text" class="form-control" id="business_name" name="business_name" required>
+      </div>
+      <div class="mb-3 text-start">
+        <label for="whatsapp" class="form-label">No WhatsApp</label>
+        <input type="text" class="form-control" id="whatsapp" name="whatsapp" required>
+      </div>
+      <div class="d-grid mb-2">
+        <button type="submit" class="btn btn-primary">Daftar</button>
+      </div>
+    </form>
+
+    <p class="text-small mt-3">Sudah punya akun? <a href="{{ url_for('login') }}">Login di sini</a></p>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

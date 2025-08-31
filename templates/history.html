@@ -1,65 +1,146 @@
-<!-- templates/history.html -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Riwayat Chat</title>
+  <title>Riwayat Chat - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    function filterChats() {
-      const search = document.getElementById("search").value.toLowerCase();
-      const chats = document.querySelectorAll(".chat-entry");
-      chats.forEach(c => {
-        const content = c.innerText.toLowerCase();
-        c.style.display = content.includes(search) ? "block" : "none";
-      });
-    }
-
-    function confirmClear() {
-      if (confirm("Yakin ingin menghapus semua riwayat chat?")) {
-        window.location.href = "/clear-history";
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
-  <body class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 text-gray-100">
+<body class="bg-gray-100 font-sans">
 
-  <div class="max-w-4xl mx-auto mt-10 p-6 bg-white/80 backdrop-blur-md text-gray-800 rounded-2xl shadow-xl">
-    <h2 class="text-2xl font-bold mb-4">Riwayat Chat</h2>
+<!-- Backdrop untuk sidebar mobile -->
+<div id="backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
-    {% if chats %}
-      <div class="space-y-4 max-h-[600px] overflow-y-auto">
-        {% for chat in chats %}
-          <div class="border border-gray-300 rounded-xl p-4 bg-white shadow">
-            <p class="text-sm text-gray-500 mb-1">{{ chat.timestamp.strftime('%d %B %Y, %H:%M') }}</p>
-            <p><strong>Anda:</strong> {{ chat.user_message }}</p>
-            <p><strong>Bot:</strong> {{ chat.bot_response }}</p>
-          </div>
-        {% endfor %}
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="bg-gradient-to-b from-blue-600 to-purple-700 text-white fixed top-0 left-0 h-full z-40
+           w-full md:w-64 transform -translate-x-full md:translate-x-0
+           transition-transform duration-300 p-6 space-y-4">
+
+    <div class="flex items-center gap-3 mb-6">
+      <img src="{{ url_for('static', filename='img/T-putih.png') }}" alt="Tanyain Logo" class="h-10 w-10 rounded-full shadow">
+      <span class="text-xl font-bold tracking-wide">Tanyain</span>
+    </div>
+
+    <nav class="space-y-3">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+        <i class="fas fa-question-circle"></i> FAQ
+      </a>
+      <a href="{{ url_for('history') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition bg-purple-700">
+        <i class="fas fa-clock-rotate-left"></i> Riwayat
+      </a>
+      <a href="{{ url_for('analytics') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+        <i class="fas fa-chart-line"></i> Analitik
+      </a>
+      <a href="{{ url_for('logout') }}" class="flex items-center gap-2 p-3 rounded hover:bg-red-600 transition">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+    </nav>
+
+    <div class="mt-auto text-sm text-gray-300 pt-4 border-t border-purple-500">
+      Login sebagai <strong>{{ session['username'] }}</strong>
+    </div>
+
+    <button id="closeSidebar" class="md:hidden absolute top-4 right-4 text-white text-xl">
+      <i class="fas fa-times"></i>
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <div class="flex-1 md:ml-64 w-full">
+
+    <!-- Topbar Mobile -->
+    <header class="bg-white shadow p-4 flex items-center justify-between md:hidden">
+      <button id="toggleSidebar" class="text-purple-600 text-2xl">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h2 class="text-lg font-semibold text-gray-800">Riwayat Chat</h2>
+    </header>
+
+    <!-- Content -->
+    <main class="p-6 md:p-10">
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <input type="text" id="search" onkeyup="filterChats()" placeholder="Cari pesan..."
+            class="w-full sm:w-1/2 px-4 py-2 border rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400" />
+          <button onclick="document.getElementById('confirmModal').classList.remove('hidden')"
+            class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-trash-alt"></i> Hapus Semua
+          </button>
+        </div>
+
+        {% if chats %}
+        <div class="space-y-4 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+          {% for chat in chats %}
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm chat-entry">
+              <p class="text-xs text-gray-500 mb-2">{{ chat.timestamp.strftime('%d %B %Y, %H:%M') }}</p>
+              <p><strong>Anda:</strong> {{ chat.user_message }}</p>
+              <p><strong>Bot:</strong> {{ chat.bot_response }}</p>
+            </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-gray-600 text-center py-8">Belum ada riwayat chat.</p>
+        {% endif %}
       </div>
-    {% else %}
-      <p class="text-gray-600">Belum ada riwayat chat.</p>
-    {% endif %}
+    </main>
 
-    <!-- Tombol & Modal -->
-    <div class="flex justify-between items-center mt-8">
-      <a href="{{ url_for('index') }}" class="text-white hover:underline">← Kembali ke Dashboard</a>
-      <button onclick="document.getElementById('confirmModal').classList.remove('hidden')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Hapus Semua Riwayat</button>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-white text-gray-800 rounded-lg p-6 w-80 shadow-lg">
+    <h3 class="text-lg font-bold mb-4">Konfirmasi</h3>
+    <p class="mb-6">Yakin ingin menghapus semua riwayat chat?</p>
+    <div class="flex justify-end gap-4">
+      <button onclick="document.getElementById('confirmModal').classList.add('hidden')"
+        class="px-4 py-2 rounded border border-gray-300">Batal</button>
+      <a href="{{ url_for('clear_history') }}" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Hapus</a>
     </div>
   </div>
+</div>
 
-  <!-- Modal Konfirmasi -->
-  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white text-gray-800 rounded-lg p-6 w-80">
-      <h3 class="text-lg font-bold mb-4">Konfirmasi</h3>
-      <p class="mb-6">Yakin ingin menghapus semua riwayat chat?</p>
-      <div class="flex justify-end gap-4">
-        <button onclick="document.getElementById('confirmModal').classList.add('hidden')" class="px-4 py-2 rounded border border-gray-300">Batal</button>
-        <a href="{{ url_for('clear_history') }}" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Hapus</a>
-      </div>
-    </div>
-  </div>
+<!-- Sidebar Script -->
+<script>
+  const sidebar = document.getElementById("sidebar");
+  const toggleSidebar = document.getElementById("toggleSidebar");
+  const closeSidebar = document.getElementById("closeSidebar");
+  const backdrop = document.getElementById("backdrop");
 
-  <script src="https://kit.fontawesome.com/a2e0f4f91f.js" crossorigin="anonymous"></script>
+  toggleSidebar?.addEventListener("click", () => {
+    sidebar.classList.remove("-translate-x-full");
+    backdrop.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+  });
+
+  closeSidebar?.addEventListener("click", () => {
+    sidebar.classList.add("-translate-x-full");
+    backdrop.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  });
+
+  backdrop?.addEventListener("click", () => {
+    sidebar.classList.add("-translate-x-full");
+    backdrop.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  });
+</script>
+
+<!-- Filter Script -->
+<script>
+  function filterChats() {
+    const search = document.getElementById("search").value.toLowerCase();
+    const chats = document.querySelectorAll(".chat-entry");
+    chats.forEach(c => {
+      const content = c.innerText.toLowerCase();
+      c.style.display = content.includes(search) ? "block" : "none";
+    });
+  }
+</script>
+
 </body>
 </html>

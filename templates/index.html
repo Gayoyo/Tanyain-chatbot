@@ -31,6 +31,9 @@
         <a href="{{ url_for('history') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
           <i class="fas fa-clock-rotate-left"></i> Riwayat
         </a>
+        <a href="{{ url_for('analytics') }}" class="flex items-center gap-2 p-3 rounded hover:bg-purple-600 transition">
+          <i class="fas fa-chart-line"></i> Analitik
+        </a>
         <a href="{{ url_for('logout') }}" class="flex items-center gap-2 p-3 rounded hover:bg-red-600 transition">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
@@ -43,7 +46,11 @@
       <button id="closeSidebar" class="md:hidden absolute top-4 right-4 text-white text-xl focus:outline-none hover:text-red-300">
         <i class="fas fa-times"></i>
       </button>
+      <a href="/chat/{{ client.slug }}" target="_blank">🔗 Chatbot</a>
+      <a href="/qr/{{ client.slug }}" target="_blank">📷 QR</a>
+
     </aside>
+
 
     <!-- Konten Utama -->
     <div class="flex-1 md:ml-64 w-full">
@@ -57,6 +64,21 @@
       </header>
 
       <main class="p-6 md:p-10">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-4 space-y-2">
+              {% for category, message in messages %}
+                <div class="px-4 py-2 rounded text-sm font-medium
+                    {% if category == 'success' %} bg-green-100 text-green-800
+                    {% elif category == 'danger' %} bg-red-100 text-red-800
+                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-800
+                    {% else %} bg-blue-100 text-blue-800 {% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
 
         <!-- Judul -->
         <h2 class="text-3xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
@@ -123,7 +145,9 @@
                   <div class="flex-1">
                     <div class="text-lg font-medium text-gray-800 mb-1">{{ faq.question }}</div>
                     <div class="text-gray-700 mb-1">{{ faq.answer }}</div>
-                    <div class="text-sm text-gray-500 mb-2">Kategori: {{ faq.category or '-' }}</div>
+                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      {{ faq.category or '-' }}
+                    </span>
                     <div class="flex gap-3 text-sm">
                       <button 
                         type="button"
@@ -135,9 +159,13 @@
                         <i class="fas fa-edit"></i> Edit
                       </button>
 
-                      <a href="{{ url_for('delete_faq', id=faq.id) }}" onclick="return confirm('Yakin ingin menghapus?')" class="text-red-600 hover:underline">
+                      <button
+                        type="button"
+                        class="text-red-600 hover:underline btn-delete"
+                        data-id="{{ faq.id }}"
+                        data-question="{{ faq.question }}">
                         <i class="fas fa-trash"></i> Hapus
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -162,31 +190,76 @@
     </div>
   </div>
   <!-- Modal Edit FAQ -->
-  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-gray-50 p-4 rounded-md shadow  w-full max-w-md p-6 relative">
-      <h2 class="text-lg font-semibold mb-4">Edit Pertanyaan FAQ</h2>
-      <form method="POST" id="editForm" class="space-y-4">
+    <div id="editModal"
+       class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm
+              flex items-center justify-center px-4">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative overflow-auto max-h-[90vh] transition-all duration-300">
+
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        <i class="fas fa-pen-to-square text-blue-600"></i> Edit FAQ
+      </h2>
+
+      <form method="POST" id="editForm" class="space-y-5">
+
         <div>
-          <label for="editQuestion" class="block text-sm font-medium text-gray-700">Pertanyaan</label>
-          <input type="text" id="editQuestion" name="question" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Masukkan pertanyaan...">
+          <label for="editQuestion" class="block text-sm font-medium text-gray-700 mb-1">Pertanyaan</label>
+          <input type="text" id="editQuestion" name="question"
+            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Masukkan pertanyaan..." required>
         </div>
 
         <div>
-          <label for="editAnswer" class="block text-sm font-medium text-gray-700">Jawaban</label>
-          <textarea id="editAnswer" name="answer" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Masukkan jawaban..."></textarea>
+          <label for="editAnswer" class="block text-sm font-medium text-gray-700 mb-1">Jawaban</label>
+          <textarea id="editAnswer" name="answer" rows="4"
+            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Masukkan jawaban..." required></textarea>
         </div>
 
         <div>
-          <label for="editCategory" class="block text-sm font-medium text-gray-700">Kategori (Opsional)</label>
-          <input type="text" id="editCategory" name="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Contoh: Umum, Teknis, dll">
+          <label for="editCategory" class="block text-sm font-medium text-gray-700 mb-1">Kategori (Opsional)</label>
+          <input type="text" id="editCategory" name="category"
+            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Contoh: Umum, Teknis, dll">
         </div>
 
-        <div class="text-right">
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Simpan Perubahan
+        <div class="text-right pt-4">
+          <button type="submit"
+            class="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-6 rounded-lg shadow-md flex items-center justify-center gap-2 transition-all">
+
+            <!-- Spinner -->
+            <span id="spinner-edit" class="hidden absolute left-4 animate-spin text-white">
+              <i class="fas fa-circle-notch"></i>
+            </span>
+
+            <span>Simpan Perubahan</span>
           </button>
         </div>
+
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Hapus -->
+  <div id="deleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+      <h3 class="text-xl font-semibold text-red-600 mb-4">
+        Konfirmasi Penghapusan
+      </h3>
+      <p class="mb-4 text-gray-700">
+        Apakah kamu yakin ingin menghapus FAQ berikut?
+      </p>
+      <p class="mb-6 italic text-gray-600" id="deleteQuestionPreview"></p>
+
+      <div class="flex justify-end gap-4">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100">
+          Batal
+        </button>
+        <form method="GET" id="deleteForm">
+          <button type="submit" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+            Ya, Hapus
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -270,7 +343,7 @@
       }
     });
 
-    // Pasang event listener ke semua tombol edit
+    // Pasang event listener ke semua tomb ol edit
     document.querySelectorAll('.btn-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         openEditModal(
@@ -282,5 +355,52 @@
       });
     });
   </script>
+  
+  <script>
+    const faqForm = document.querySelector('form[action="{{ url_for("add_faq") }}"]');
+    const spinner = document.getElementById("spinner");
+
+    faqForm?.addEventListener('submit', function () {
+      spinner.classList.remove("hidden");
+    });
+  </script>
+  
+  <script>
+    const editForm = document.getElementById('editForm');
+    const spinnerEdit = document.getElementById('spinner-edit');
+
+    editForm?.addEventListener('submit', function () {
+      spinnerEdit.classList.remove('hidden');
+    });
+  </script>
+
+  <script>
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteQuestionPreview = document.getElementById('deleteQuestionPreview');
+
+    function closeDeleteModal() {
+      deleteModal.classList.add('hidden');
+    }
+
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const question = btn.dataset.question;
+
+        deleteQuestionPreview.textContent = question;
+        deleteForm.action = `/delete/${id}`;
+        deleteModal.classList.remove('hidden');
+      });
+    });
+
+    // Tutup modal jika klik luar modal
+    deleteModal.addEventListener('click', function (event) {
+      if (event.target === deleteModal) {
+        closeDeleteModal();
+      }
+    });
+  </script>
+
 </body>
 </html>

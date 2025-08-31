@@ -15,47 +15,58 @@
       height: 100%;
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to right, #6a11cb, #2575fc); /* ungu ke biru */
+      background: linear-gradient(to right, #6a11cb, #2575fc);
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
     .login-box {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-      max-width: 400px;
-      width: 100%;
-      color: #fff;
+      width: 360px;
+      padding: 40px 30px;
+      border-radius: 16px;
+      background: #ffffff;
+      color: #333;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      text-align: center;
     }
 
     .login-box h4 {
       font-weight: 600;
       margin-bottom: 20px;
-    }
-
-    .form-control {
-      background-color: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: #fff;
-    }
-
-    .form-control:focus {
-      background-color: rgba(255, 255, 255, 0.2);
-      box-shadow: none;
-      color: #fff;
+      color: #2c3e50;
     }
 
     .form-label {
       font-weight: 500;
+      color: #333;
+      text-align: left;
+      display: block;
     }
+
+    .form-control {
+      background-color: transparent;
+      border: none;
+      border-bottom: 2px solid rgba(0,0,0,0.2);
+      border-radius: 0;
+      color: #333;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .form-control:focus {
+      border-bottom: 2px solid #6a11cb;
+      background-color: transparent;
+      box-shadow: none;
+      outline: none;
+    }
+
 
     .btn-primary {
       background-color: #6a11cb;
       border: none;
+      border-radius: 8px;
+      font-weight: 500;
     }
 
     .btn-primary:hover {
@@ -63,13 +74,14 @@
     }
 
     .logo {
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       margin-bottom: 15px;
     }
 
     .text-small {
       font-size: 0.9rem;
+      color: #555;
     }
 
     .alert {
@@ -113,7 +125,7 @@
       </div>
     </form>
 
-    <p class="text-small mt-3">Belum punya akun? Hubungi admin.</p>
+    <p class="text-small mt-3">Belum punya akun? <a href="{{ url_for('register') }}" class="text-decoration-none text-primary">Daftar di sini</a></p>
   </div>
 
   <!-- Bootstrap JS -->

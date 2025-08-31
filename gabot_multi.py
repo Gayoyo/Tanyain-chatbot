@@ -4,8 +4,16 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import Counter
 import csv, io
+import enum
+from sqlalchemy import Enum
+from decorators import admin_required, client_required
+
+class RoleEnum(enum.Enum):
+    client = "client"
+    admin = "admin"
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -18,7 +26,11 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default="user")
+    role = db.Column(Enum(RoleEnum), default=RoleEnum.client, nullable=False)
+    business_name = db.Column(db.String(150), nullable=True)
+    whatsapp = db.Column(db.String(20), nullable=True)
+    is_approved = db.Column(db.Boolean, default=False)
+    slug = db.Column(db.String(100), unique=True)
 
 class ChatbotResponse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,6 +47,10 @@ class ChatHistory(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
 
+# --- Slug generator ---
+def generate_slug(name):
+    import re
+    return re.sub(r'\W+', '', name.lower())
 # === TF-IDF Cache ===
 tfidf_cache = {}
 
@@ -75,19 +91,65 @@ def find_closest_question(user_input, client_id, threshold=0.3):
 def chat_ui():
     return render_template("user_chat.html")
 
+# --- Modifikasi di /register ---
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        business_name = request.form["business_name"]
+        whatsapp = request.form["whatsapp"]
+
+        if Client.query.filter_by(username=username).first():
+            flash("Username sudah digunakan.", "warning")
+            return redirect(url_for("register"))
+
+        slug = generate_slug(business_name)
+        if Client.query.filter_by(slug=slug).first():
+            flash("Slug sudah digunakan.", "warning")
+            return redirect(url_for("register"))
+
+        new_client = Client(
+            username=username,
+            password=generate_password_hash(password),
+            business_name=business_name,
+            whatsapp=whatsapp,
+            role=RoleEnum.client,  # ✅ role langsung dari Enum, aman
+            is_approved=False,
+            slug=slug
+        )
+        db.session.add(new_client)
+        db.session.commit()
+        flash("Pendaftaran berhasil! Tunggu konfirmasi dari admin.", "success")
+        return redirect(url_for("login"))
+    return render_template("register.html")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+
         client = Client.query.filter_by(username=username).first()
+
         if client and check_password_hash(client.password, password):
+            if not client.is_approved:
+                flash("Akun Anda masih menunggu persetujuan admin.", "warning")
+                return redirect(url_for("login"))
+ 
             session["client_id"] = client.id
             session["username"] = client.username
-            session["role"] = client.role
+            session["role"] = client.role.value
+
             flash("Login berhasil!", "success")
-            return redirect(url_for("index"))
-        flash("Username atau password salah.", "danger")
+
+            if client.role == RoleEnum.admin:
+                return redirect(url_for("superadmin"))
+            else:
+                return redirect(url_for("index"))  # user biasa masuk ke halaman index
+        else:
+            flash("Username atau password salah.", "danger")
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -95,10 +157,35 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+# === Public Chat by Slug ===
+@app.route("/chat/<slug>")
+def public_chat(slug):
+    client = Client.query.filter_by(slug=slug).first()
+    if not client or not client.is_approved:
+        return "Client tidak ditemukan atau belum di-approve", 404
+    session["client_id"] = client.id
+    return render_template("user_chat.html")
+
+# === QR Code Generator ===
+@app.route("/qr/<slug>")
+def generate_qr(slug):
+    url = request.url_root + "chat/" + slug
+    img = qrcode.make(url)
+    buffer = BytesIO()
+    img.save(buffer)
+    buffer.seek(0)
+    return send_file(buffer, mimetype='image/png')
+
 @app.route("/index")
+@client_required
 def index():
     if "client_id" not in session:
         return redirect(url_for("login"))
+
+    if session.get("role") != "client":
+        flash("Akses ditolak.", "danger")
+        return redirect(url_for("login"))
+
     selected_category = request.args.get("category")
     page = int(request.args.get("page", 1))
     per_page = 5
@@ -108,8 +195,18 @@ def index():
     total = query.count()
     faqs = query.offset((page - 1) * per_page).limit(per_page).all()
     categories = [row[0] for row in db.session.query(ChatbotResponse.category).filter_by(client_id=session["client_id"]).distinct()]
-    return render_template("index.html", faqs=faqs, page=page, total_pages=(total + per_page - 1) // per_page,
-                           selected_category=selected_category, categories=categories)
+
+    client = Client.query.get(session["client_id"])
+
+    return render_template("index.html", 
+        faqs=faqs, 
+        page=page, 
+        total_pages=(total + per_page - 1) // per_page,
+        selected_category=selected_category, 
+        categories=categories,
+        client=client
+    )
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -206,6 +303,7 @@ def bulk_delete():
     return redirect(url_for("index"))
 
 @app.route("/history")
+@client_required
 def history():
     if "client_id" not in session:
         return redirect(url_for("login"))
@@ -222,15 +320,16 @@ def clear_history():
     return redirect(url_for("history"))
 
 @app.route("/analytics")
+@client_required
 def analytics():
     if "client_id" not in session:
         return redirect(url_for("login"))
-    
+
     client_id = session["client_id"]
-    
+
     # Total chats
     total_chats = ChatHistory.query.filter_by(client_id=client_id).count()
-    
+
     # Most asked questions (from chat history)
     most_asked = db.session.query(
         ChatHistory.user_message, 
@@ -238,34 +337,116 @@ def analytics():
     ).filter_by(client_id=client_id).group_by(
         ChatHistory.user_message
     ).order_by(db.desc('count')).limit(10).all()
-    
+
     # Chat activity by date
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
     chat_activity = db.session.query(
         db.func.date(ChatHistory.timestamp).label('date'),
         db.func.count(ChatHistory.id).label('count')
-    ).filter_by(client_id=client_id).group_by(
+    ).filter(
+        ChatHistory.client_id == client_id,
+        ChatHistory.timestamp >= thirty_days_ago
+    ).group_by(
         db.func.date(ChatHistory.timestamp)
-    ).order_by(db.desc('date')).limit(30).all()
-    
+    ).order_by(
+        db.asc('date')
+    ).all()
+    default_unanswered_msg = "Maaf, saya belum mengerti apa yang di maksud."
+
+    answered_chats = ChatHistory.query.filter(
+        ChatHistory.client_id == client_id,
+        ChatHistory.bot_response != default_unanswered_msg
+    ).count()
+
+    unanswered_chats = ChatHistory.query.filter(
+        ChatHistory.client_id == client_id,
+        ChatHistory.bot_response == default_unanswered_msg
+    ).count()
+
+
     # Total FAQ count
     total_faqs = ChatbotResponse.query.filter_by(client_id=client_id).count()
-    
+
     return render_template("analytics.html", 
-                         total_chats=total_chats,
-                         most_asked=most_asked,
-                         chat_activity=chat_activity,
-                         total_faqs=total_faqs)
+         total_chats=total_chats,
+         answered_chats=answered_chats,
+         unanswered_chats=unanswered_chats,
+         most_asked=most_asked,
+         chat_activity=chat_activity,
+         total_faqs=total_faqs)
 
 @app.route("/healthz")
 def healthz():
     return "OK"
+
+# === Super Admin Approval ===
+@app.route("/superadmin")
+@admin_required
+def superadmin():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+    pending_clients = Client.query.filter_by(is_approved=False).all()
+    return render_template("superadmin.html", pending_clients=pending_clients)
+
+@app.route("/approve/<int:client_id>")
+@admin_required
+def approve_client(client_id):
+    client = Client.query.get_or_404(client_id)
+    client.is_approved = True
+    db.session.commit()
+    flash(f"Akun {client.business_name} telah disetujui!", "success")
+    return redirect(url_for("superadmin"))
+
+
+@app.route("/superadmin/clients")
+def all_clients():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+    clients = Client.query.all()
+    return render_template("all_clients.html", clients=clients)
+
+@app.route("/export-faq")
+def export_faq():
+    if "client_id" not in session:
+        return redirect(url_for("login"))
+    output = io.StringIO()
+    writer = csv.writer(output)
+    faqs = ChatbotResponse.query.filter_by(client_id=session["client_id"]).all()
+    for f in faqs:
+        writer.writerow([f.question, f.answer, f.category])
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=faq.csv"}
+    )
+
+@app.before_request
+def check_approval():
+    allowed = ["login", "register", "static", "logout", "chat", "public_chat", "healthz"]
+    if request.endpoint and any(request.endpoint.startswith(a) for a in allowed):
+        return
+    client_id = session.get("client_id")
+    if client_id:
+        client = Client.query.get(client_id)
+        if client and not client.is_approved:
+            flash("Akun Anda belum disetujui.", "warning")
+            return redirect(url_for("logout"))
 
 # === Setup DB dan admin ===
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         if not Client.query.filter_by(username="admin").first():
-            admin = Client(username="admin", password=generate_password_hash("admin123"), role="admin")
+            admin = Client(
+                username="admin",
+                password=generate_password_hash("admin123"),
+                role="admin",
+                business_name="Admin",
+                whatsapp="0000000000",
+                is_approved=True  # penting agar tidak diblok saat login
+            )
             db.session.add(admin)
             db.session.commit()
             print("Admin default dibuat.")
