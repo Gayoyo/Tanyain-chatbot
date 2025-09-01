@@ -6,3 +6,4 @@ requests
 werkzeug
 qrcode
 sqlalchemy
+gunicorn
