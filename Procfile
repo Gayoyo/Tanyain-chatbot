@@ -1,0 +1,1 @@
+web: gunicorn gabot_multi:app
